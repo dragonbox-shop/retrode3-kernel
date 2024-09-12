@@ -759,7 +759,10 @@ static int esp_probe(struct sdio_func *func,
 	struct esp_sdio_context *context = NULL;
 	int ret = 0;
 
+printk("%s\n", __func__);
+
 	if (func->num != 1) {
+printk("%s 1\n", __func__);
 		return -EINVAL;
 	}
 
@@ -769,6 +772,7 @@ static int esp_probe(struct sdio_func *func,
 	atomic_set(&tx_pending, 0);
 
 	if (!context) {
+printk("%s 2 ret=%d\n", __func__, ret);
 		if (ret)
 			return ret;
 		else
@@ -787,9 +791,11 @@ static int esp_probe(struct sdio_func *func,
 		host->ops->set_ios(host, &host->ios);
 	}
 
+printk("%s 3\n", __func__);
 	ret = init_context(context);
 	if (ret) {
 		deinit_sdio_func(func);
+printk("%s 4 ret=%d\n", __func__, ret);
 		return ret;
 	}
 
@@ -804,6 +810,8 @@ static int esp_probe(struct sdio_func *func,
 
 
 	esp_dbg("ESP SDIO probe completed\n");
+
+printk("%s 5 ret=%d\n", __func__, ret);
 
 	return ret;
 }
