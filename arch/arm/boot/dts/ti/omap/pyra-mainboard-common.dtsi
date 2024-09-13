@@ -691,6 +691,25 @@
 
 &mmc4 { /* enable second (µ)SD slot (SDIO capable) */
 	status = "okay";
+
+	bus-width = <4>;
+	max-frequency = <50000000>;
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	broken-cd;
+
+	voltage-ranges = <3300 3300>;	// hardware doesn't support!
+
+	wlan: wlan@0 {
+		compatible = "espressif,esp_sdio";
+		reg = <0>;
+//		interrupt-parent = <&gpio5>;
+//		interrupts = <11 IRQ_TYPE_LEVEL_HIGH>;	/* GPIO_139 */
+//		ref-clock-frequency = <26000000>;
+	};
+
 };
 
 &smps10_out1_reg {
