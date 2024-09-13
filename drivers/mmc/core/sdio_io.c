@@ -62,18 +62,22 @@ int sdio_enable_func(struct sdio_func *func)
 	unsigned char reg;
 	unsigned long timeout;
 
+printk("%s\n", __func__);
 	if (!func)
 		return -EINVAL;
 
 	pr_debug("SDIO: Enabling device %s...\n", sdio_func_id(func));
 
+printk("%s 1\n", __func__);
 	ret = mmc_io_rw_direct(func->card, 0, 0, SDIO_CCCR_IOEx, 0, &reg);
+printk("%s 2 ret=%d\n", __func__, ret);
 	if (ret)
 		goto err;
 
 	reg |= 1 << func->num;
 
 	ret = mmc_io_rw_direct(func->card, 1, 0, SDIO_CCCR_IOEx, reg, NULL);
+printk("%s 3 ret=%d\n", __func__, ret);
 	if (ret)
 		goto err;
 
@@ -81,6 +85,7 @@ int sdio_enable_func(struct sdio_func *func)
 
 	while (1) {
 		ret = mmc_io_rw_direct(func->card, 0, 0, SDIO_CCCR_IORx, 0, &reg);
+printk("%s 4 ret=%d\n", __func__, ret);
 		if (ret)
 			goto err;
 		if (reg & (1 << func->num))
@@ -95,6 +100,7 @@ int sdio_enable_func(struct sdio_func *func)
 	return 0;
 
 err:
+printk("%s 5 ret=%d\n", __func__, ret);
 	pr_debug("SDIO: Failed to enable device %s\n", sdio_func_id(func));
 	return ret;
 }
