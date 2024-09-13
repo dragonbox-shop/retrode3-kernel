@@ -313,15 +313,21 @@ static int get_firmware_data(struct esp_sdio_context *context)
 	u32 *val;
 	int ret = 0;
 
+printk("%s ret=%d\n", __func__, ret);
+
 	val = kmalloc(sizeof(u32), GFP_KERNEL);
 
 	if (!val) {
+printk("%s 1 ret=%d\n", __func__, ret);
 		return -ENOMEM;
 	}
 
 	/* Initialize rx_byte_count */
 	ret = esp_read_reg(context, ESP_SLAVE_PACKET_LEN_REG,
 			(u8 *) val, sizeof(*val), ACQUIRE_LOCK);
+
+printk("%s 2 ret=%d\n", __func__, ret);
+
 	if (ret) {
 		kfree(val);
 		return ret;
@@ -335,6 +341,7 @@ static int get_firmware_data(struct esp_sdio_context *context)
 	ret = esp_read_reg(context, ESP_SLAVE_TOKEN_RDATA, (u8 *) val,
 			sizeof(*val), ACQUIRE_LOCK);
 
+printk("%s 3 ret=%d\n", __func__, ret);
 	if (ret) {
 		kfree(val);
 		return ret;
@@ -350,6 +357,7 @@ static int get_firmware_data(struct esp_sdio_context *context)
 	esp_info("Tx Pos ======  %d\n", context->tx_buffer_count);
 
 	kfree(val);
+printk("%s 4 ret=%d\n", __func__, ret);
 	return ret;
 }
 
@@ -357,12 +365,15 @@ static int init_context(struct esp_sdio_context *context)
 {
 	int ret = 0;
 	uint8_t prio_q_idx = 0;
+printk("%s\n", __func__);
 
 	if (!context) {
+printk("%s 1\n", __func__);
 		return -EINVAL;
 	}
 
 	ret = get_firmware_data(context);
+printk("%s 2 ret=%d\n", __func__, ret);
 	if (ret)
 		return ret;
 
@@ -377,6 +388,8 @@ static int init_context(struct esp_sdio_context *context)
 	}
 
 	context->adapter->if_type = ESP_IF_TYPE_SDIO;
+
+printk("%s 3 ret=%d\n", __func__, ret);
 
 	return ret;
 }
@@ -762,7 +775,7 @@ static int esp_probe(struct sdio_func *func,
 printk("%s\n", __func__);
 
 	if (func->num != 1) {
-printk("%s 1\n", __func__);
+printk("%s 1 num=%d\n", __func__, func->num);
 		return -EINVAL;
 	}
 

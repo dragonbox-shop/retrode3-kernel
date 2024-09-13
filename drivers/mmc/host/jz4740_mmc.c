@@ -518,6 +518,7 @@ static void jz4740_mmc_transfer_check_state(struct jz4740_mmc_host *host,
 
 	status = readl(host->base + JZ_REG_MMC_STATUS);
 	if (status & JZ_MMC_STATUS_WRITE_ERROR_MASK) {
+printk("%s: w status = %08x\n", __func__, status);
 		if (status & (JZ_MMC_STATUS_TIMEOUT_WRITE)) {
 			host->req->cmd->error = -ETIMEDOUT;
 			data->error = -ETIMEDOUT;
@@ -526,6 +527,7 @@ static void jz4740_mmc_transfer_check_state(struct jz4740_mmc_host *host,
 			data->error = -EIO;
 		}
 	} else if (status & JZ_MMC_STATUS_READ_ERROR_MASK) {
+printk("%s: r status = %08x\n", __func__, status);
 		if (status & (JZ_MMC_STATUS_TIMEOUT_READ)) {
 			host->req->cmd->error = -ETIMEDOUT;
 			data->error = -ETIMEDOUT;
@@ -902,9 +904,11 @@ static irqreturn_t jz_mmc_irq(int irq, void *devid)
 			if (status & JZ_MMC_STATUS_TIMEOUT_RES) {
 				cmd->error = -ETIMEDOUT;
 			} else if (status & JZ_MMC_STATUS_CRC_RES_ERR) {
+printk("%s: a status = %08x\n", __func__, status);
 				cmd->error = -EIO;
 			} else if (status & (JZ_MMC_STATUS_CRC_READ_ERROR |
 				    JZ_MMC_STATUS_CRC_WRITE_ERROR)) {
+printk("%s: b status = %08x\n", __func__, status);
 				if (cmd->data)
 					cmd->data->error = -EIO;
 				cmd->error = -EIO;

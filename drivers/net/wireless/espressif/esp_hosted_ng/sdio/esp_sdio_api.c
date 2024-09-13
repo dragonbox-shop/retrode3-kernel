@@ -18,6 +18,8 @@ static int esp_read_byte(struct esp_sdio_context *context, u32 reg, u8 *data, u8
 	struct sdio_func *func = NULL;
 	int ret;
 
+printk("%s 1\n", __func__);
+
 	if (!context || !context->func || !data) {
 		esp_err("Invalid or incomplete arguments!\n");
 		return -1;
@@ -29,6 +31,8 @@ static int esp_read_byte(struct esp_sdio_context *context, u32 reg, u8 *data, u8
 		sdio_claim_host(func);
 
 	*data = sdio_readb(func, reg, &ret);
+
+printk("%s 2 ret=%d\n", __func__, ret);
 
 	if (is_lock_needed)
 		sdio_release_host(func);
@@ -64,6 +68,8 @@ static int esp_read_multi_byte(struct esp_sdio_context *context, u32 reg, u8 *da
 	struct sdio_func *func = NULL;
 	int ret;
 
+printk("%s 1\n", __func__);
+
 	if (!context || !context->func || !data) {
 		esp_err("Invalid or incomplete arguments!\n");
 		return -1;
@@ -75,6 +81,8 @@ static int esp_read_multi_byte(struct esp_sdio_context *context, u32 reg, u8 *da
 		sdio_claim_host(func);
 
 	ret = sdio_memcpy_fromio(func, data, reg, size);
+
+printk("%s 2 ret=%d\n", __func__, ret);
 
 	if (is_lock_needed)
 		sdio_release_host(func);
@@ -109,6 +117,8 @@ int esp_read_reg(struct esp_sdio_context *context, u32 reg, u8 *data, u16 size, 
 {
 	/* Need to apply address mask when reading/writing slave registers */
 	reg &= ESP_ADDRESS_MASK;
+
+printk("%s 1 reg=%d size=%d\n", __func__, reg, size);
 
 	if (size <= 1) {
 		return esp_read_byte(context, reg, data, is_lock_needed);

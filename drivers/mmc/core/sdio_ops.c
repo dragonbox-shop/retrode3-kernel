@@ -123,12 +123,14 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 	unsigned int seg_size = card->host->max_seg_size;
 	int err;
 
+printk("%s\n", __func__);
 	WARN_ON(blksz == 0);
 
 	/* sanity check */
 	if (addr & ~0x1FFFF)
 		return -EINVAL;
 
+printk("%s 2\n", __func__);
 	mrq.cmd = &cmd;
 	mrq.data = &data;
 
@@ -150,6 +152,7 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 
 	left_size = data.blksz * data.blocks;
 	nents = DIV_ROUND_UP(left_size, seg_size);
+printk("%s 3\n", __func__);
 	if (nents > 1) {
 		if (sg_alloc_table(&sgtable, nents, GFP_KERNEL))
 			return -ENOMEM;
@@ -170,10 +173,14 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 	}
 
 	mmc_set_data_timeout(&data, card);
+printk("%s 4a cmd.err=%d data.err=%d\n", __func__, cmd.error, data.error);
 
 	mmc_pre_req(card->host, &mrq);
+printk("%s 4b cmd.err=%d data.err=%d\n", __func__, cmd.error, data.error);
 
 	mmc_wait_for_req(card->host, &mrq);
+
+printk("%s 4c cmd.err=%d data.err=%d\n", __func__, cmd.error, data.error);
 
 	if (cmd.error)
 		err = cmd.error;
@@ -191,10 +198,14 @@ int mmc_io_rw_extended(struct mmc_card *card, int write, unsigned fn,
 	else
 		err = 0;
 
+printk("%s 5 err=%d\n", __func__, err);
+
 	mmc_post_req(card->host, &mrq, err);
 
 	if (nents > 1)
 		sg_free_table(&sgtable);
+
+printk("%s 6 err=%d\n", __func__, err);
 
 	return err;
 }
