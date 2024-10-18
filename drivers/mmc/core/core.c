@@ -220,7 +220,6 @@ static void __mmc_start_request(struct mmc_host *host, struct mmc_request *mrq)
 	/* Assumes host controller has been runtime resumed by mmc_claim_host */
 	err = mmc_retune(host);
 	if (err) {
-printk("%s: err=%d\n", __func__, err);
 		mrq->cmd->error = err;
 		mmc_request_done(host, mrq);
 		return;
@@ -259,8 +258,6 @@ printk("%s: err=%d\n", __func__, err);
 	if (host->cqe_on)
 		host->cqe_ops->cqe_off(host);
 
-//if(mrq->cmd && mrq->data)
-//printk("%s host->ops>request=%pS\n", __func__, host->ops->request);
 	host->ops->request(host, mrq);
 }
 
@@ -395,7 +392,6 @@ static int __mmc_start_req(struct mmc_host *host, struct mmc_request *mrq)
 
 	err = mmc_start_request(host, mrq);
 	if (err) {
-printk("%s: err=%d\n", __func__, err);
 		mrq->cmd->error = err;
 		mmc_complete_cmd(mrq);
 		complete(&mrq->completion);
@@ -408,11 +404,7 @@ void mmc_wait_for_req_done(struct mmc_host *host, struct mmc_request *mrq)
 {
 	struct mmc_command *cmd;
 
-mrq->cmd->retries=10;
-
 	while (1) {
-if(mrq->cmd && mrq->data)
-printk("%s 1 cmd=%d data=%d retries=%d\n", __func__, mrq->cmd->error, mrq->data->error, cmd->retries);
 		wait_for_completion(&mrq->completion);
 
 		cmd = mrq->cmd;
@@ -421,9 +413,6 @@ printk("%s 1 cmd=%d data=%d retries=%d\n", __func__, mrq->cmd->error, mrq->data-
 		    mmc_card_removed(host->card))
 			break;
 
-if(mrq->cmd && mrq->data)
-printk("%s 2 cmd=%d data=%d\n", __func__, mrq->cmd->error, mrq->data->error);
-
 		mmc_retune_recheck(host);
 
 		pr_debug("%s: req failed (CMD%u): %d, retrying...\n",
@@ -431,13 +420,9 @@ printk("%s 2 cmd=%d data=%d\n", __func__, mrq->cmd->error, mrq->data->error);
 		cmd->retries--;
 		cmd->error = 0;
 		__mmc_start_request(host, mrq);
-if(mrq->cmd && mrq->data)
-printk("%s 3 cmd=%d data=%d\n", __func__, mrq->cmd->error, mrq->data->error);
 	}
 
 	mmc_retune_release(host);
-if(mrq->cmd && mrq->data)
-printk("%s 4 cmd=%d data=%d\n", __func__, mrq->cmd->error, mrq->data->error);
 }
 EXPORT_SYMBOL(mmc_wait_for_req_done);
 
@@ -628,20 +613,10 @@ EXPORT_SYMBOL(mmc_is_req_done);
  */
 void mmc_wait_for_req(struct mmc_host *host, struct mmc_request *mrq)
 {
-if(mrq->cmd && mrq->data)
-printk("%s 1 cmd=%d data=%d\n", __func__, mrq->cmd->error, mrq->data->error);
 	__mmc_start_req(host, mrq);
 
-if(mrq->cmd && mrq->data)
-printk("%s 2 cmd=%d data=%d cap_cmd_during_tfr=%d\n", __func__, mrq->cmd->error, mrq->data->error, mrq->cap_cmd_during_tfr);
-
-if(mrq->cmd && mrq->data)
-printk("%s 2b cmd=%d data=%d cap_cmd_during_tfr=%d\n", __func__, mrq->cmd->error, mrq->data->error, mrq->cap_cmd_during_tfr);
 	if (!mrq->cap_cmd_during_tfr)
 		mmc_wait_for_req_done(host, mrq);
-if(mrq->cmd && mrq->data)
-printk("%s 3 cmd=%d data=%d\n", __func__, mrq->cmd->error, mrq->data->error);
-
 }
 EXPORT_SYMBOL(mmc_wait_for_req);
 

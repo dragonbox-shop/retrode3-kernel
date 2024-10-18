@@ -317,12 +317,8 @@ static int sdio_io_rw_ext_helper(struct sdio_func *func, int write,
 	unsigned max_blocks;
 	int ret;
 
-printk("%s 1\n", __func__);
-
 	if (!func || (func->num > 7))
 		return -EINVAL;
-
-printk("%s 2\n", __func__);
 
 	/* Do the bulk of the transfer using block mode (if supported). */
 	if (func->card->cccr.multi_block && (size > sdio_max_byte_size(func))) {
@@ -341,7 +337,6 @@ printk("%s 2\n", __func__);
 			ret = mmc_io_rw_extended(func->card, write,
 				func->num, addr, incr_addr, buf,
 				blocks, func->cur_blksize);
-printk("%s 3 ret=%d\n", __func__, ret);
 			if (ret)
 				return ret;
 
@@ -359,7 +354,6 @@ printk("%s 3 ret=%d\n", __func__, ret);
 		/* Indicate byte mode by setting "blocks" = 0 */
 		ret = mmc_io_rw_extended(func->card, write, func->num, addr,
 			 incr_addr, buf, 0, size);
-printk("%s 4 ret=%d\n", __func__, ret);
 		if (ret)
 			return ret;
 
@@ -368,7 +362,6 @@ printk("%s 4 ret=%d\n", __func__, ret);
 		if (incr_addr)
 			addr += size;
 	}
-printk("%s 5 ret=%d\n", __func__, ret);
 	return 0;
 }
 
