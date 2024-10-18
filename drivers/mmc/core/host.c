@@ -293,8 +293,10 @@ int mmc_of_parse(struct mmc_host *host)
 		return -EINVAL;
 	}
 
+printk("%s: 1 %s max=%u\n",  __func__, mmc_hostname(host), host->f_max);
 	/* f_max is obtained from the optional "max-frequency" property */
 	device_property_read_u32(dev, "max-frequency", &host->f_max);
+printk("%s: 2 %s max=%u\n",  __func__, mmc_hostname(host), host->f_max);
 
 	device_property_read_u32(dev, "max-sd-hs-hz", &host->max_sd_hs_hz);
 
