@@ -929,10 +929,14 @@ static int jz4740_mmc_set_clock_rate(struct jz4740_mmc_host *host, int rate)
 	int div = 0;
 	int real_rate;
 
+printk("%s: %s f_max=%u\n", __func__, mmc_hostname(host->mmc), host->mmc->f_max);
+
 	jz4740_mmc_clock_disable(host);
 	clk_set_rate(host->clk, host->mmc->f_max);
 
 	real_rate = clk_get_rate(host->clk);
+
+printk("%s: %s real=%d\n", __func__, mmc_hostname(host->mmc), real_rate);
 
 	while (real_rate > rate && div < 7) {
 		++div;
@@ -955,6 +959,8 @@ static int jz4740_mmc_set_clock_rate(struct jz4740_mmc_host *host, int rate)
 			writel(JZ_MMC_LPM_LOW_POWER_MODE_EN,
 				   host->base + JZ_REG_MMC_LPM);
 	}
+
+printk("%s: %s final real=%d\n", __func__, mmc_hostname(host->mmc), real_rate);
 
 	return real_rate;
 }
@@ -1114,6 +1120,9 @@ static int jz4740_mmc_probe(struct platform_device* pdev)
 		return PTR_ERR(host->base);
 
 	mmc->ops = &jz4740_mmc_ops;
+
+printk("%s: %s f_max=%u\n", __func__, mmc_hostname(mmc), mmc->f_max);
+
 	if (!mmc->f_max)
 		mmc->f_max = JZ_MMC_CLK_RATE;
 
