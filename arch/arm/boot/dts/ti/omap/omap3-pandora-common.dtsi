@@ -702,6 +702,14 @@
 	broken-cd;
 	/* cd-gpios = <&twl_gpio 1 GPIO_ACTIVE_LOW>;
 	/*wp-gpios = <&gpio4 31 GPIO_ACTIVE_HIGH>;*/	/* GPIO_127 */
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	wlan@0 {
+		compatible = "espressif,esp_sdio";
+		reg = <0>;
+	};
 };
 
 &mmc3 {
