@@ -255,16 +255,23 @@ jz4780_dma_desc_alloc(struct jz4780_dma_chan *jzchan, unsigned int count,
 	struct jz4780_dma_desc *desc;
 
 	if (count > JZ_DMA_MAX_DESC)
+{
+printk("%s: count=%u, JZ_DMA_MAX_DESC=%lu\n", __func__, count, JZ_DMA_MAX_DESC);
 		return NULL;
+}
 
 	desc = kzalloc_obj(*desc, GFP_NOWAIT);
 	if (!desc)
+{
+printk("%s: kzalloc(%d) fail\n", __func__, sizeof(*desc));
 		return NULL;
+}
 
 	desc->desc = dma_pool_alloc(jzchan->desc_pool, GFP_NOWAIT,
 				    &desc->desc_phys);
 	if (!desc->desc) {
 		kfree(desc);
+printk("%s: dma_pool_alloc() fail\n", __func__);
 		return NULL;
 	}
 
@@ -367,6 +374,7 @@ static int jz4780_dma_setup_hwdesc(struct jz4780_dma_chan *jzchan,
 		width = JZ_DMA_WIDTH_32_BIT;
 		break;
 	default:
+printk("%s: width = %lu\n", width);
 		return -EINVAL;
 	}
 
@@ -391,7 +399,13 @@ static struct dma_async_tx_descriptor *jz4780_dma_prep_slave_sg(
 
 	desc = jz4780_dma_desc_alloc(jzchan, sg_len, DMA_SLAVE, direction);
 	if (!desc)
+{
+printk("%s: desc = %px\n", __func__, desc);
+printk("%s: sg_len = %u\n", __func__, sg_len);
+printk("%s: direction = %u\n", __func__, direction);
+printk("%s: flags = %lu\n", __func__, flags);
 		return NULL;
+}
 
 	for (i = 0; i < sg_len; i++) {
 		err = jz4780_dma_setup_hwdesc(jzchan, &desc->desc[i],
@@ -399,6 +413,7 @@ static struct dma_async_tx_descriptor *jz4780_dma_prep_slave_sg(
 					      sg_dma_len(&sgl[i]),
 					      direction);
 		if (err < 0) {
+printk("%s: err = %d\n", __func__, err);
 			jz4780_dma_desc_free(&jzchan->desc->vdesc);
 			return NULL;
 		}
