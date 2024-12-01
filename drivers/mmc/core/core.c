@@ -7,6 +7,7 @@
  *  Copyright (C) 2005-2008 Pierre Ossman, All Rights Reserved.
  *  MMCv4 support Copyright (C) 2006 Philip Langdale, All Rights Reserved.
  */
+
 #include <linux/module.h>
 #include <linux/init.h>
 #include <linux/interrupt.h>
@@ -2103,7 +2104,7 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 {
 	host->f_init = freq;
 
-	pr_debug("%s: %s: trying to init card at %u Hz\n",
+	pr_info("%s: %s: trying to init card at %u Hz\n",
 		mmc_hostname(host), __func__, host->f_init);
 
 	mmc_power_up(host, host->ocr_avail);
@@ -2132,21 +2133,29 @@ static int mmc_rescan_try_freq(struct mmc_host *host, unsigned freq)
 			return 0;
 	}
 
+printk("%s 1\n", __func__);
 	/* Order's important: probe SDIO, then SD, then MMC */
 	if (!(host->caps2 & MMC_CAP2_NO_SDIO))
 		if (!mmc_attach_sdio(host))
 			return 0;
+printk("%s 2\n", __func__);
 
 	if (!(host->caps2 & MMC_CAP2_NO_SD))
 		if (!mmc_attach_sd(host))
 			return 0;
+printk("%s 3\n", __func__);
 
 	if (!(host->caps2 & MMC_CAP2_NO_MMC))
 		if (!mmc_attach_mmc(host))
 			return 0;
 
+printk("%s 4\n", __func__);
+
 out:
+printk("%s 5\n", __func__);
+
 	mmc_power_off(host);
+printk("%s 6\n", __func__);
 	return -EIO;
 }
 
@@ -2258,6 +2267,7 @@ void mmc_rescan(struct work_struct *work)
 		container_of(work, struct mmc_host, detect.work);
 	int i;
 
+// printk("%s\n", __func__);
 	if (host->rescan_disable)
 		return;
 
@@ -2297,6 +2307,7 @@ void mmc_rescan(struct work_struct *work)
 		goto out;
 	}
 
+printk("%s 1a\n", __func__);
 	/*
 	 * Ideally we should favor initialization of legacy SD cards and defer
 	 * UHS-II enumeration. However, it seems like cards doesn't reliably
@@ -2308,35 +2319,47 @@ void mmc_rescan(struct work_struct *work)
 		mmc_release_host(host);
 		goto out;
 	}
+printk("%s 1b\n", __func__);
+
 
 	for (i = 0; i < ARRAY_SIZE(freqs); i++) {
 		unsigned int freq = freqs[i];
+printk("%s 2\n", __func__);
 		if (freq > host->f_max) {
 			if (i + 1 < ARRAY_SIZE(freqs))
 				continue;
 			freq = host->f_max;
 		}
+printk("%s 3\n", __func__);
 		if (!mmc_rescan_try_freq(host, max(freq, host->f_min)))
 			break;
 		if (freqs[i] <= host->f_min)
 			break;
 	}
+printk("%s 4\n", __func__);
 
 	/* A non-removable card should have been detected by now. */
 	if (!mmc_card_is_removable(host) && !host->bus_ops)
 		pr_info("%s: Failed to initialize a non-removable card",
 			mmc_hostname(host));
 
+printk("%s 5\n", __func__);
+
 	/*
 	 * Ignore the command timeout errors observed during
 	 * the card init as those are excepted.
 	 */
 	host->err_stats[MMC_ERR_CMD_TIMEOUT] = 0;
+printk("%s 6\n", __func__);
 	mmc_release_host(host);
+printk("%s 7\n", __func__);
 
  out:
 	if (host->caps & MMC_CAP_NEEDS_POLL)
+{
 		mmc_schedule_delayed_work(&host->detect, HZ);
+// printk("%s 8\n", __func__);
+}
 }
 
 void mmc_start_host(struct mmc_host *host)

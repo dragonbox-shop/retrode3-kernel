@@ -312,6 +312,7 @@ int mmc_add_card(struct mmc_card *card)
 		[UHS_DDR50_BUS_SPEED] = "DDR50 ",
 	};
 
+printk("%s: 1\n", __func__);
 
 	dev_set_name(&card->dev, "%s:%04x", mmc_hostname(card->host), card->rca);
 	dev_set_removable(&card->dev,
@@ -372,15 +373,29 @@ int mmc_add_card(struct mmc_card *card)
 		pr_info("%s: new %s%s%s card at address %04x\n",
 			mmc_hostname(card->host), speed_mode,
 			uhs_bus_speed_mode, type, card->rca);
+	}
+printk("%s: 2\n", __func__);
 
 	mmc_add_card_debugfs(card);
+
+printk("%s: 3\n", __func__);
+
 	card->dev.of_node = mmc_of_find_child_device(card->host, 0);
+
+printk("%s: 4\n", __func__);
 
 	device_enable_async_suspend(&card->dev);
 
+printk("%s: 5\n", __func__);
+
 	ret = device_add(&card->dev);
+
+printk("%s: 6\n", __func__);
+
 	if (ret)
 		return ret;
+
+printk("%s: 7\n", __func__);
 
 	mmc_card_set_present(card);
 
@@ -392,6 +407,8 @@ int mmc_add_card(struct mmc_card *card)
 	    card->ext_csd.power_off_notification == EXT_CSD_POWER_ON)
 		mmc_regulator_register_undervoltage_notifier(card->host);
 
+printk("%s: 8\n", __func__);
+dump_stack();
 	return 0;
 }
 

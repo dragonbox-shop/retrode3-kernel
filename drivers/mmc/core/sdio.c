@@ -1215,15 +1215,23 @@ int mmc_attach_sdio(struct mmc_host *host)
 	u32 ocr, rocr;
 	struct mmc_card *card;
 
+printk("%s\n", __func__);
+
 	WARN_ON(!host->claimed);
+
+printk("%s 1\n", __func__);
 
 	err = mmc_send_io_op_cond(host, 0, &ocr);
 	if (err)
 		return err;
 
+printk("%s 2\n", __func__);
+
 	mmc_attach_bus(host, &mmc_sdio_ops);
 	if (host->ocr_avail_sdio)
 		host->ocr_avail = host->ocr_avail_sdio;
+
+printk("%s 3\n", __func__);
 
 
 	rocr = mmc_select_voltage(host, ocr);
@@ -1236,12 +1244,18 @@ int mmc_attach_sdio(struct mmc_host *host)
 		goto err;
 	}
 
+printk("%s 4\n", __func__);
+
+
 	/*
 	 * Detect and init the card.
 	 */
 	err = mmc_sdio_init_card(host, rocr, NULL);
 	if (err)
 		goto err;
+
+printk("%s 5\n", __func__);
+
 
 	card = host->card;
 
@@ -1253,6 +1267,8 @@ int mmc_attach_sdio(struct mmc_host *host)
 		 * Do not allow runtime suspend until after SDIO function
 		 * devices are added.
 		 */
+printk("%s 6\n", __func__);
+
 		pm_runtime_get_noresume(&card->dev);
 
 		/*
@@ -1268,6 +1284,9 @@ int mmc_attach_sdio(struct mmc_host *host)
 		pm_runtime_enable(&card->dev);
 	}
 
+printk("%s 7\n", __func__);
+
+
 	/*
 	 * The number of functions on the card is encoded inside
 	 * the ocr.
@@ -1278,7 +1297,10 @@ int mmc_attach_sdio(struct mmc_host *host)
 	/*
 	 * Initialize (but don't add) all present functions.
 	 */
+printk("%s 8\n", __func__);
+
 	for (i = 0; i < funcs; i++, card->sdio_funcs++) {
+printk("%s 9\n", __func__);
 		err = sdio_init_func(host->card, i + 1);
 		if (err)
 			goto remove;
@@ -1290,6 +1312,8 @@ int mmc_attach_sdio(struct mmc_host *host)
 			pm_runtime_enable(&card->sdio_func[i]->dev);
 	}
 
+printk("%s 10\n", __func__);
+
 	/*
 	 * First add the card to the driver model...
 	 */
@@ -1297,6 +1321,7 @@ int mmc_attach_sdio(struct mmc_host *host)
 	err = mmc_add_card(host->card);
 	if (err)
 		goto remove_added;
+printk("%s 11\n", __func__);
 
 	/*
 	 * ...then the SDIO functions.
@@ -1310,7 +1335,10 @@ int mmc_attach_sdio(struct mmc_host *host)
 	if (host->caps & MMC_CAP_POWER_OFF_CARD)
 		pm_runtime_put(&card->dev);
 
+printk("%s 12\n", __func__);
 	mmc_claim_host(host);
+
+printk("%s 13\n", __func__);
 	return 0;
 
 
