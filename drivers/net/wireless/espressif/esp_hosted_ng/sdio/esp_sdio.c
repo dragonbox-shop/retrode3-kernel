@@ -758,7 +758,7 @@ static int esp_probe(struct sdio_func *func,
 {
 	struct esp_sdio_context *context = NULL;
 	int ret = 0;
-
+printk("%s\n", __func__);
 	if (func->num != 1) {
 		return -EINVAL;
 	}
