@@ -34,7 +34,7 @@ static inline int get_bus_bit(struct gpio_desc *desc)
 {
 #if 1
 	struct gpio_chip *gc = desc->gdev->chip;
-	return gc->get(gc, gpio_chip_hwgpio(desc));
+	return gc->get(gc, gpiod_hwgpio(desc));
 #else
 	return gpiod_get_value(desc);
 #endif
@@ -47,7 +47,7 @@ static inline int set_bus_bit(struct gpio_desc *desc, int value)
 	struct gpio_chip *gc = desc->gdev->chip;
 	// can we use set_multiple?
 // printk("%s: %px set=%pS set=%pS\n", __func__, gc, gc->set, gc->set);
-	return gc->set(gc, gpio_chip_hwgpio(desc), value);
+	return gc->set(gc, gpiod_hwgpio(desc), value);
 #else
 	return gpiod_set_value(desc, value);
 #endif
