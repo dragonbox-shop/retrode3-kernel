@@ -304,14 +304,14 @@ static ssize_t retrode3_write(struct file *file, const char __user *buf,
 
 // if (mode) dev_warn(&slot->dev, "%s: mode = %d\n", __func__, mode);
 
-	if (IS_NES()) { // NES mapping to address bus
- printk("%s: pos %08llx\n", __func__, *ppos);
- printk("%s: addr 1 %08x\n", __func__, addr);
+	if (IS_NES()) { // handle/debug NES mapping to address bus
+// printk("%s: pos %08llx\n", __func__, *ppos);
+// printk("%s: addr 1 %08x\n", __func__, addr);
 		addr &= NES_A0_A14;	// limit to 15 bit
- printk("%s: addr 2 %08x\n", __func__, addr);
+// printk("%s: addr 2 %08x\n", __func__, addr);
 		if (!(addr & NES_A13))
 			addr |= NES_A16;	// A16 (PPU_/A13) is !A13
- printk("%s: addr 3 %08x\n", __func__, addr);
+// printk("%s: addr 3 %08x\n", __func__, addr);
 	}
 
 	written = 0;
