@@ -18,6 +18,7 @@ dtb-$(CONFIG_INGENIC_GENERIC_BOARD) += alpha400.dtb \
 					   ci20.dtb \
 					   cu1000-neo.dtb \
 					   lx16.dtb lx16-retrode-2.9.2.dtb lx16-retrode-2.9.3.dtb lx16-retrode-2.9.4.dtb lx16-retrode-2.9.5.dtb \
+					   lx16-retrode-2.9.4-1.dtb \
 					   cu1830-neo.dtb \
 					   lx20.dtb lx20-v0.2.dtb lx20-v0.3.dtb \
 					   lx26.dtb
