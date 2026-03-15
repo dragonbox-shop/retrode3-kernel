@@ -258,7 +258,7 @@ static int is_selected(struct retrode3_slot *slot)
 }
 
 static void select_slot(struct retrode3_bus *bus, struct retrode3_slot *slot)
-{ /* control chip select */
+{ /* control cart select */
 	int i;
 
 // printk("%s:\n", __func__);
@@ -354,6 +354,11 @@ static int retrode3_probe(struct platform_device *pdev)
 	if (IS_ERR(bus->time))
 		return PTR_ERR(bus->time);
 	gpiod_set_value(bus->time, 0);	// make inactive
+
+	bus->phi2 = devm_gpiod_get(&pdev->dev, "phi2", GPIOD_OUT_HIGH);
+printk("%s: time=%px\n", __func__, bus->phi2);
+	if (!IS_ERR(bus->phi2))
+		gpiod_set_value(bus->phi2, 0);	// make inactive
 
 	bus->reset = devm_gpiod_get(&pdev->dev, "reset", GPIOD_OUT_HIGH);	// active LOW is XORed with DT definition
 // printk("%s: reset=%px\n", __func__, bus->reset);

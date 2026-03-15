@@ -42,6 +42,7 @@ struct retrode3_bus {
 	struct gpio_desc *oe;		// oe-gpio
 	struct gpio_desc *time;		// time-gpio
 	struct gpio_desc *reset;	// reset-gpio
+	struct gpio_desc *phi2;		// phi2-gpio
 	struct retrode3_slot *slots[4];
 	struct mutex select_lock;	// used by select_slot
 	uint32_t current_addr;
@@ -55,12 +56,12 @@ struct retrode3_bus {
 static int set_address(struct retrode3_bus *bus, uint32_t addr);
 
 // read from the data bus (taking A0 into account)
-static int read_half(struct retrode3_bus *bus, int a0);	// D0..D7 or D8..D15
+static int read_half(struct retrode3_bus *bus, int a0);	// D0..D7 (a0 = 1) or D8..D15 (a0 = 0)
 static int read_byte(struct retrode3_bus *bus);	// use bit 0 of current_address
 static int read_word(struct retrode3_bus *bus);	// D0..D15
 
 // write a word - potentially a byte
-static void write_half(struct retrode3_bus *bus, uint8_t data, int a0);	// D0..D7 or D8..D15
+static void write_half(struct retrode3_bus *bus, uint8_t data, int a0);	// D0..D7 (a0 = 1) or D8..D15 (a0 = 0)
 static void write_byte(struct retrode3_bus *bus, uint8_t data);	// use bit 0 of current_address
 static void write_word(struct retrode3_bus *bus, uint16_t data);	// D0..D15
 

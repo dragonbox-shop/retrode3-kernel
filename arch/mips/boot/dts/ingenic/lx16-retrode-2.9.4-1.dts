@@ -22,6 +22,10 @@
 			/delete-property/ bias-pull-up;
 			bias-disable;
 		};
+		control2 { /* PHI2 */
+			pins = "PC6";
+			bias-disable;
+		};
 };
 
 // gpio assignment
@@ -44,5 +48,7 @@
 			     <&gpa 21 GPIO_ACTIVE_HIGH>, // D13
 			     <&gpa 22 GPIO_ACTIVE_HIGH>, // D14
 			     <&gpa 23 GPIO_ACTIVE_HIGH>; // D15
+
+		phi2-gpio =  <&gpc 26 GPIO_ACTIVE_LOW>;	// NES: CPU_M2
 	};
 };
