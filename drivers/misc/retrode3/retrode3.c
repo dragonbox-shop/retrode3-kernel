@@ -534,6 +534,7 @@ static ssize_t addr_store(struct device *dev,
 	int err;
 
 	if (strncmp(buf, "deselect", 8) == 0) {
+		end_drive_word(slot->bus);
 		select_slot(slot->bus, NULL);
 		return count;
 	}
