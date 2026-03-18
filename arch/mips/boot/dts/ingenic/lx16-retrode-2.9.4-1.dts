@@ -11,13 +11,38 @@
 	model = "Openpandora Retrode-2.9.4#1";
 };
 
+// pinctrl
 &retrode3 {
 		// NOTE: x1600 pins can be either pull-up or pull-down (only some PC can pull down). Or bias-disable.
-		// rewire D2 and D10
+		// rewire D2 and D10 to PC24/PC25
 		data { /* D0 .. D15 */
 			pins = "PA8", "PA9", "PC24", "PA11", "PA12", "PA13", "PA14", "PA15",
 			       "PA16", "PA17", "PC25", "PA19", "PA20", "PA21", "PA22", "PA23";
+			/* PC24/25 can't do pull-up */
 			/delete-property/ bias-pull-up;
-			bias-disable;	/* PC24/25 can't do pull-up
+			bias-disable;
 		};
+};
+
+// gpio assignment
+/ {
+	retrode3 {
+		// rewire D2 and D10 to PC24/PC25
+		data-gpios = <&gpa 8 GPIO_ACTIVE_HIGH>, // D0
+			     <&gpa 9 GPIO_ACTIVE_HIGH>, // D1
+			     <&gpc 24 GPIO_ACTIVE_HIGH>, // D2
+			     <&gpa 11 GPIO_ACTIVE_HIGH>, // D3
+			     <&gpa 12 GPIO_ACTIVE_HIGH>, // D4
+			     <&gpa 13 GPIO_ACTIVE_HIGH>, // D5
+			     <&gpa 14 GPIO_ACTIVE_HIGH>, // D6
+			     <&gpa 15 GPIO_ACTIVE_HIGH>, // D7
+			     <&gpa 16 GPIO_ACTIVE_HIGH>, // D8
+			     <&gpa 17 GPIO_ACTIVE_HIGH>, // D9
+			     <&gpc 25 GPIO_ACTIVE_HIGH>, // D10
+			     <&gpa 19 GPIO_ACTIVE_HIGH>, // D11
+			     <&gpa 20 GPIO_ACTIVE_HIGH>, // D12
+			     <&gpa 21 GPIO_ACTIVE_HIGH>, // D13
+			     <&gpa 22 GPIO_ACTIVE_HIGH>, // D14
+			     <&gpa 23 GPIO_ACTIVE_HIGH>; // D15
+	};
 };
