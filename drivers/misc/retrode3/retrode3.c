@@ -61,6 +61,9 @@ static inline int set_address(struct retrode3_bus *bus, uint32_t addr)
 
 // printk("%s: bus %px addr %08x\n", __func__, bus, addr);
 
+	if (addr == bus->current_addr)
+		return 0;	// no real change
+
 	if (addr >= EOF)
 		return -EINVAL;
 
