@@ -81,14 +81,14 @@ static inline int set_address(struct retrode3_bus *bus, uint32_t addr)
 // FIXME: force to switch direction of D lines to input? Or rely on write turning them back?
 
 static inline int read_half(struct retrode3_bus *bus, int a0)
-{ /* read data from data lines */
+{ /* read data from data lines D0..D7 (a0 = 1) or D8..D15 (a0 = 0) */
 	int d;
 	uint8_t data;
 // printk("%s: a0=%d\n", __func__, a0);
 
 	set_bus_bit(bus->oe, 0);	// this is the pin level although we have defined "active low" in the DTS
 
-	/* read 8 data bits either on D0..D7 or D8..D15 */
+	/* read 8 data bits either on D0..D7 (a0 = 1) or D8..D15 (a0 = 0) */
 	data = 0;
 	if(a0)
 		for (d = 0; d < bus->datas->ndescs-8; d++) {
@@ -146,29 +146,29 @@ static inline int read_word(struct retrode3_bus *bus)
 }
 
 static inline void set_half(struct retrode3_bus *bus, uint8_t data, int a0)
-{ // set D0..D7 or D8..D15
+{ /* set D0..D7 (a0 = 1) or D8..D15 (a0 = 0) */
 	int d;
 	/* set data bits */
 
 // printk("%s:\n", __func__);
 
-	if(a0) { // D8..D15
-		for (d = 8; d < bus->datas->ndescs; d++) {
-			gpiod_direction_output(bus->datas->desc[d], (data>>(d-8)) & 1);
-		}
-	} else { // D0..D7
+	if(a0) { // D0..D7
 		for (d = 0; d < bus->datas->ndescs-8; d++) {
 			gpiod_direction_output(bus->datas->desc[d], (data>>d) & 1);
+		}
+	} else { // D8..D15
+		for (d = 8; d < bus->datas->ndescs; d++) {
+			gpiod_direction_output(bus->datas->desc[d], (data>>(d-8)) & 1);
 		}
 	}
 }
 
 static inline void drive_half(struct retrode3_bus *bus, uint8_t data, int a0)
-{ // write D0..D7 or D8..D15 with WE
+{ // write D0..D7 (a0 = 1) or D8..D15 (a0 = 0) with WE0 or WE8
 	set_half(bus, data, a0);
-	/* pulse write enable for a0 */
-	gpiod_set_value(bus->we->desc[a0], 1);
-	gpiod_set_value(bus->we->desc[a0], 0);
+	/* pulse write enable depending on a0 (WE8 for a0 = 1, WE0 for a0 = 0) */
+	gpiod_set_value(bus->we->desc[a0?0:1], 1);
+	gpiod_set_value(bus->we->desc[a0?0:1], 0);
 }
 
 static inline void end_drive_word(struct retrode3_bus *bus)
@@ -180,13 +180,13 @@ static inline void end_drive_word(struct retrode3_bus *bus)
 }
 
 static inline void write_half(struct retrode3_bus *bus, uint8_t data, int a0)
-{ // write D0..D7 or D8..D15 with WE and switch data bus back to input
+{ // write D0..D7 (a0 = 1) or D8..D15 (a0 = 0) with WE0 or WE8 and switch data bus back to input
 	drive_half(bus, data, a0);
 	end_drive_word(bus);
 }
 
 static inline void write_byte(struct retrode3_bus *bus, uint8_t data)
-{ // use bit 0 of current_address
+{ // use a0 of current_address
 	return write_half(bus, data, bus->current_addr & 1);
 }
 
