@@ -42,7 +42,8 @@ static struct class *retrode3_class;
 #define MD_ENSRAM	5	// TIME impulse without WE (despite write?)
 #define MD_EEPMODE	6
 
-// define MD specific gpios:	gpio-time = pb5
+#define TIME_HI (gpiod_set_value(slot->bus->time, 0))			// TIME = low
+#define TIME_LOW (gpiod_set_value(slot->bus->time, 1))			// TIME = high
 
 #define SNES_REGULAR	MODE_SIMPLE_BUS
 #define SNES_HIROM	9
@@ -403,12 +404,14 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 				write_half(slot->bus, byte, 1);	// D0..D7 and WE0
 // CHECKME: do we have to play the WE0/WE8 differently?
 				break;
-			case MD_TIME:
+			case MD_TIME:	// write with active TIME impulse
 				dev_info(&slot->dev, "%s: write MD_TIME %08x %02x\n", __func__, addr, byte);
 				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 				if(err < 0)
 					goto failed;
-				// write with TIME impulse
+				TIME_LOW;
+				write_half(slot->bus, byte, 1);	// D0..D7 and WE0
+				TIME_HI;
 				break;
 				;;
 			case NES_PRG:
