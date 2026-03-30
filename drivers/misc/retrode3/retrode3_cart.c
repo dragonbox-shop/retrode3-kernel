@@ -405,13 +405,27 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 // CHECKME: do we have to play the WE0/WE8 differently?
 				break;
 			case MD_TIME:	// write with active TIME impulse
-				dev_info(&slot->dev, "%s: write MD_TIME %08x %02x\n", __func__, addr, byte);
+				dev_info(&slot->dev, "%s: write MD_TIME+WE %08x %02x\n", __func__, addr, byte);
 				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 				if(err < 0)
 					goto failed;
 				TIME_LOW;
-				write_half(slot->bus, byte, 1);	// D0..D7 and WE0
+				write_half(slot->bus, byte, 1);	// D0..D7 and WE0 impulse
 				TIME_HI;
+				break;
+				;;
+			case MD_ENSRAM:	// write with active TIME impulse but no WE
+				dev_info(&slot->dev, "%s: write MD_TIME %08x %02x\n", __func__, addr, byte);
+#if 0	// ignore address
+				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
+				if(err < 0)
+					goto failed;
+#endif
+				set_half(slot->bus, byte, 1);	// D0..D7 and no WE0
+				TIME_LOW;
+				_delay_us(1);
+				TIME_HI;
+				end_drive_word(slot->bus);
 				break;
 				;;
 			case NES_PRG:
