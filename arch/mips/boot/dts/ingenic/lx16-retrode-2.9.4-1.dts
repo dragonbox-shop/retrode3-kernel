@@ -23,7 +23,7 @@
 			bias-disable;
 		};
 		control2 { /* PHI2 */
-			pins = "PC6";
+			pins = "PC26";
 			bias-disable;
 		};
 };
