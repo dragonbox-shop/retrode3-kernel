@@ -317,6 +317,12 @@
 			bias-pull-up;
 		};
 #endif
+#if APPLICATION >= 295
+		control-phi { /* PHI2 */
+			pins = "PC26";
+			bias-disable;
+		};
+#endif
 	};
 
 	slots: slots {
@@ -420,7 +426,9 @@
 		time-gpio =  <&gpb 10 GPIO_ACTIVE_LOW>;	// TIME
 		reset-gpio = <&exp_leds 2 GPIO_ACTIVE_LOW>;  // RESET
 #endif
-
+#if APPLICATION >= 295
+		phi2-gpio =  <&gpc 26 GPIO_ACTIVE_LOW>;	// NES: CPU_M2
+#endif
 		slots {
 			pinctrl-names = "default";
 			pinctrl-0 = <&slots>;
