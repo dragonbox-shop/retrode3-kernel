@@ -540,8 +540,6 @@ static void write_chr_byte(unsigned int address, uint8_t data) {
 				//_delay_us(1);
 				break;
 			case NES_REG:
-			case NES_RAM:
-			case NES_WRAM:
 /*
 static void write_reg_byte(unsigned int address, uint8_t data) {  // FIX FOR MMC1 RAM CORRUPTION
   PHI2_LOW;
@@ -564,7 +562,35 @@ static void write_reg_byte(unsigned int address, uint8_t data) {  // FIX FOR MMC
   // Set phi2 to high state to keep cartridge unreseted
   PHI2_HI;
 }
-
+*/
+				PHI2_LOW;
+				ROMSEL_HI;  // A15 HI = E000
+				MODE_WRITE;
+				PRG_WRITE;  // CPU R/W LO
+				PORTK_PRG(byte);
+				set_address(addr);  // PHI2 low, ROMSEL always HIGH
+				// DIRECT PIN TO PREVENT RAM CORRUPTION
+				// DIFFERENCE BETWEEN M2 LO AND ROMSEL HI MUST BE AROUND 33ns
+				// IF TIME IS GREATER THAN 33ns THEN WRITES TO 0xE000/0xF000 WILL CORRUPT RAM AT 0x6000/0x7000
+#ifdef NIMP
+	// we can't implement this through gpiod() in Linux kernel
+	return -EINVAL;
+	// rather, we must ioremap the gpio controller registers
+	// also note: on x1600 ROMSEL is controlled by A15/CE-NES and M2 through GPC26 on different gpio controllers
+	// and try to do this with interrupts locked
+				PORTF = 0b01111101;  // ROMSEL LO/M2 HI
+				PORTF = 0b01111110;  // ROMSEL HI/M2 LO
+#endif
+				_delay_us(1);
+				// Back to read mode
+				PRG_READ;
+				MODE_READ;
+				set_address(0);
+				// Set phi2 to high state to keep cartridge unreseted
+				PHI2_HI;
+				break;
+			case NES_RAM:
+/*
 static void write_ram_byte(unsigned int address, uint8_t data) {  // Mapper 19 (Namco 106/163) WRITE RAM SAFE ($E000-$FFFF)
   PHI2_LOW;
   ROMSEL_HI;
@@ -587,7 +613,29 @@ static void write_ram_byte(unsigned int address, uint8_t data) {  // Mapper 19 (
   // Set phi2 to high state to keep cartridge unreseted
   PHI2_HI;
 }
-
+*/
+				PHI2_LOW;
+				ROMSEL_HI;
+				MODE_WRITE;
+				PRG_WRITE;
+				PORTK_PRG(byte);
+				set_address(addr);  // PHI2 low, ROMSEL always HIGH
+				PHI2_HI;
+				ROMSEL_LOW;    // SET /ROMSEL LOW OTHERWISE CORRUPTS RAM
+				_delay_us(1);  // WRITING
+				// PHI2 low, ROMSEL high
+				PHI2_LOW;
+				_delay_us(1);
+				ROMSEL_HI;
+				// Back to read mode
+				PRG_READ;
+				MODE_READ;
+				set_address(0);
+				// Set phi2 to high state to keep cartridge unreseted
+				PHI2_HI;
+				break;
+			case NES_WRAM:
+/*
 static void write_wram_byte(unsigned int address, uint8_t data) {  // Mapper 5 (MMC5) RAM
   PHI2_LOW;
   ROMSEL_HI;
@@ -608,6 +656,28 @@ static void write_wram_byte(unsigned int address, uint8_t data) {  // Mapper 5 (
   // Set phi2 to high state to keep cartridge unreseted
   PHI2_HI;
 }
+*/
+
+				PHI2_LOW;
+				ROMSEL_HI;
+				set_address(addr);
+				PORTK_PRG(byte);
+				_delay_us(1);
+				MODE_WRITE;
+				PRG_WRITE;
+				PHI2_HI;
+				_delay_us(1);  // WRITING
+				PHI2_LOW;
+				ROMSEL_HI;
+				// Back to read mode
+				PRG_READ;
+				MODE_READ;
+ 				set_address(0);
+				// Set phi2 to high state to keep cartridge unreseted
+				PHI2_HI;
+				break;
+
+/*
 
 // NOTE: there are even more modes in NES.ino
 // write_reg_m59()
