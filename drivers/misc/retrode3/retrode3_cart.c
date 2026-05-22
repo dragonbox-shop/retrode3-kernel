@@ -42,7 +42,7 @@ static struct class *retrode3_class;
 #define MD_ENSRAM	5	// TIME impulse without WE (despite write?)
 #define MD_EEPMODE	6
 
-#define TIME_HI (gpiod_set_value(slot->bus->time, 0))			// TIME = low
+#define TIME_HIGH (gpiod_set_value(slot->bus->time, 0))			// TIME = low
 #define TIME_LOW (gpiod_set_value(slot->bus->time, 1))			// TIME = high
 
 #define SNES_REGULAR	MODE_SIMPLE_BUS
@@ -232,7 +232,16 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: read mode=%02x %08x\n", __func_
 				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 				if(err < 0)
 					goto failed;
-				byte = err = read_byte(slot->bus);	// read half based on a0
+				switch (mode) {
+					case MD_TIME:
+						TIME_LOW;
+						byte = err = read_byte(slot->bus);	// read half based on a0
+						TIME_HIGH;
+						break;
+					// other modes
+					default:
+						byte = err = read_byte(slot->bus);	// read half based on a0
+				}
 			}
 			else { // 8 bit bus SNES or NES
 				switch (mode) {
@@ -401,7 +410,7 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 				if(err < 0)
 					goto failed;
-				write_half(slot->bus, byte, 1);	// D0..D7 and WE0
+				write_byte(slot->bus, byte);	// a0 should be 1 for D0..D7 and WE0
 // CHECKME: do we have to play the WE0/WE8 differently?
 				break;
 			case MD_TIME:	// write with active TIME impulse
@@ -410,8 +419,8 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 				if(err < 0)
 					goto failed;
 				TIME_LOW;
-				write_half(slot->bus, byte, 1);	// D0..D7 and WE0 impulse
-				TIME_HI;
+				write_byte(slot->bus, byte);	// a0 should be 1 for D0..D7 and WE0
+				TIME_HIGH;
 				break;
 				;;
 			case MD_ENSRAM:	// write with active TIME impulse but no WE
@@ -421,13 +430,14 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 				if(err < 0)
 					goto failed;
 #endif
-				set_half(slot->bus, byte, 1);	// D0..D7 and no WE0
+				set_half(slot->bus, byte, slot->bus->current_addr & 1);	// a0 should be 1 for D0..D7 but no WE0
 				TIME_LOW;
 				_delay_us(1);
-				TIME_HI;
+				TIME_HIGH;
 				end_drive_word(slot->bus);
 				break;
 				;;
+			// other MD modes
 			case NES_PRG:
 			case NES_MMC5_SRAM:
 				dev_info(&slot->dev, "%s: write NES CPU/PRG/SRAM %08x %02x\n", __func__, addr, byte);
@@ -892,7 +902,12 @@ static void retrode3_update_cd(struct retrode3_slot *slot)
 
 // printk("%s: state changed to %d\n", __func__, cd_state);
 
-		slot-> cd_state = cd_state;
+		slot->cd_state = cd_state;
+
+		// automatically control status LED if defined?
+
+		if (slot->bus_width == 16 && cd_state == 0)
+			set_slot_power_mV(slot, 3300);	// turn off 5V mode (for MD slot)
 
 		envp[0] = kasprintf(GFP_KERNEL, "SLOT=%s", dev_name(&slot->dev));
 		len = sense_show(&slot->dev, NULL, buf);
@@ -905,6 +920,7 @@ static void retrode3_update_cd(struct retrode3_slot *slot)
 // printk("%s: %s %s\n", __func__, envp[0], envp[1]);
 		// check with: udevadm monitor --environment
 		kobject_uevent_env(&slot->dev.kobj, KOBJ_CHANGE, envp);
+
 	}
 }
 
