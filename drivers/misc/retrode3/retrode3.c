@@ -606,7 +606,7 @@ static ssize_t data8_store(struct device *dev,
 	int err;
 
 	if (!is_selected(slot))
-		return -EACCESS;
+		return -EACCES;
 
 	err = kstrtouint(buf, 16, &value);
 	if (err < 0)
@@ -648,7 +648,7 @@ static ssize_t data16_store(struct device *dev,
 	int err;
 
 	if (!is_selected(slot))
-		return -EACCESS;
+		return -EACCES;
 
 	err = kstrtouint(buf, 16, &value);
 	if (err < 0)
@@ -670,9 +670,6 @@ static ssize_t raw16_show(struct device *dev, struct device_attribute *attr,
 	struct retrode3_slot *slot = dev_get_drvdata(dev);
 	int word;
 
-	if (!is_selected(slot))
-		return sprintf(buf, "deselected\n");
-
 	word = get_word(slot->bus);
 
 	if (word < 0)
@@ -688,9 +685,6 @@ static ssize_t raw16_store(struct device *dev,
 	struct retrode3_slot *slot = dev_get_drvdata(dev);
 	unsigned int value;
 	int err;
-
-	if (!is_selected(slot))
-		return -EACCESS;
 
 	err = kstrtouint(buf, 16, &value);
 	if (err < 0)
@@ -734,7 +728,7 @@ static ssize_t control_store(struct device *dev,
 	int err;
 
 	if (!is_selected(slot))
-		return -EACCESS;
+		return -EACCES;
 
 #define CONTROL(NAME, GPIO) if (strncmp(buf, #NAME "=", strlen(#NAME "=")) == 0) { \
 		err = kstrtouint(buf+strlen(#NAME "="), 16, &value); \
@@ -746,6 +740,7 @@ static ssize_t control_store(struct device *dev,
 		return count; \
 	}
 
+	CONTROL(ce, slot->ce);
 	CONTROL(phi2, slot->bus->phi2);
 	CONTROL(rd, slot->bus->oe);
 	CONTROL(reset, slot->bus->reset);
