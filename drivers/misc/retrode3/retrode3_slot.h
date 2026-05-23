@@ -6,7 +6,7 @@
  *  drivers/gnss/core.c
  *  arch/arm/common/locomo.c
  *
- *  Copyright (C) 2022-24, H. Nikolaus Schaller
+ *  Copyright (C) 2022-26, H. Nikolaus Schaller
  *
  */
 

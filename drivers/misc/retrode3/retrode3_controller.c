@@ -3,7 +3,7 @@
 /*
  * driver for Retrode 3 game controller driver
  *
- *  Copyright (C) 2022-25, H. Nikolaus Schaller
+ *  Copyright (C) 2022-26, H. Nikolaus Schaller
  *
  * FIXME: make this an independent driver module
  */
