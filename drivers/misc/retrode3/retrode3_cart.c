@@ -8,7 +8,7 @@
  *  drivers/gnss/core.c
  *  arch/arm/common/locomo.c
  *
- *  Copyright (C) 2022-23, H. Nikolaus Schaller
+ *  Copyright (C) 2022-26, H. Nikolaus Schaller
  *
  * FIXME: make this an independent driver module
  */
@@ -37,10 +37,11 @@ static struct class *retrode3_class;
 #define MD_ROM		MODE_SIMPLE_BUS
 #define MD_P10		1	// 10 toggle pulses on CLK
 #define MD_P1		2	// 1 toggle pulses on CLK
-#define MD_TIME		3	// address with TIME impulse with WE
+#define MD_TIME		3	// read/write with TIME impulse
 #define MD_FLASH	unused 0x04 unused
 #define MD_ENSRAM	5	// TIME impulse without WE (despite write?)
 #define MD_EEPMODE	6
+#define MD_FRAM		7	// read with WE0 for special SONIC3 FRAM
 
 #define TIME_HIGH (gpiod_set_value(slot->bus->time, 0))			// TIME = low
 #define TIME_LOW (gpiod_set_value(slot->bus->time, 1))			// TIME = high
@@ -239,6 +240,13 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: read mode=%02x %08x\n", __func_
 						TIME_HIGH;
 						break;
 					// other modes
+					case MD_FRAM:	// special SONIC3 trick to read without !AS impulse on B18
+						TIME_LOW;	// activate OE (and deactivate WE)
+						PRG_WRITE;	// reset FF to control CE
+						byte = err = read_byte(slot->bus);	// read half based on a0
+						PRG_READ;	// release FF
+						TIME_HIGH;
+						break;
 					default:
 						byte = err = read_byte(slot->bus);	// read half based on a0
 				}

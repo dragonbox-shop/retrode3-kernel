@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0
 
 /*
- * based on ideas and fragents from
+ * based on ideas and fragments from
  *  drivers/char/mem.c
  *  drivers/gnss/core.c
  *  arch/arm/common/locomo.c
@@ -20,7 +20,7 @@ dazu retrode3_device mit Pointer auf den bus
 
 
  *
- *  Copyright (C) 2022-23, H. Nikolaus Schaller
+ *  Copyright (C) 2022-26, H. Nikolaus Schaller
  *
  */
 
@@ -80,13 +80,11 @@ static inline int set_address(struct retrode3_bus *bus, uint32_t addr)
 
 // FIXME: force to switch direction of D lines to input? Or rely on write turning them back?
 
-static inline int read_half(struct retrode3_bus *bus, int a0)
+static inline int get_half(struct retrode3_bus *bus, int a0)
 { /* read data from data lines D0..D7 (a0 = 1) or D8..D15 (a0 = 0) */
 	int d;
 	uint8_t data;
 // printk("%s: a0=%d\n", __func__, a0);
-
-	set_bus_bit(bus->oe, 0);	// this is the pin level although we have defined "active low" in the DTS
 
 	/* read 8 data bits either on D0..D7 (a0 = 1) or D8..D15 (a0 = 0) */
 	data = 0;
@@ -107,8 +105,18 @@ static inline int read_half(struct retrode3_bus *bus, int a0)
 			data |= bit << (d-8);
 		}
 
-	set_bus_bit(bus->oe, 1);
 // printk("%s: data=%02x\n", __func__, data);
+
+	return data;
+}
+
+static inline int read_half(struct retrode3_bus *bus, int a0)
+{ /* read data from data lines D0..D7 (a0 = 1) or D8..D15 (a0 = 0) with OE */
+	uint8_t data;
+
+	set_bus_bit(bus->oe, 0);	// this is the pin level although we have defined "active low" in the DTS
+	data = get_half(bus, a0);
+	set_bus_bit(bus->oe, 1);
 
 	return data;
 }
@@ -118,14 +126,12 @@ static inline int read_byte(struct retrode3_bus *bus)
 	return read_half(bus, bus->current_addr & 1);
 }
 
-static inline int read_word(struct retrode3_bus *bus)
+static inline int get_word(struct retrode3_bus *bus)
 { /* read data from data lines */
 	int d;
 	uint16_t data;
 
 // printk("%s:\n", __func__);
-
-	set_bus_bit(bus->oe, 0);	// this is the pin level although we have "active low"
 
 	/* read 16 data bits */
 	data = 0;
@@ -139,8 +145,18 @@ static inline int read_word(struct retrode3_bus *bus)
 		data |= bit << d;
 	}
 
-	set_bus_bit(bus->oe, 1);
 // printk("%s: data=%02x\n", __func__, data);
+
+	return data;
+}
+
+static inline int read_word(struct retrode3_bus *bus)
+{ /* read data from data lines */
+	int data;
+
+	set_bus_bit(bus->oe, 0);	// this is the pin level although we have "active low"
+	data = get_word(bus);
+	set_bus_bit(bus->oe, 1);
 
 	return data;
 }
@@ -590,7 +606,7 @@ static ssize_t data8_store(struct device *dev,
 	int err;
 
 	if (!is_selected(slot))
-		return -EINVAL;
+		return -EACCESS;
 
 	err = kstrtouint(buf, 16, &value);
 	if (err < 0)
@@ -632,7 +648,7 @@ static ssize_t data16_store(struct device *dev,
 	int err;
 
 	if (!is_selected(slot))
-		return -EINVAL;
+		return -EACCESS;
 
 	err = kstrtouint(buf, 16, &value);
 	if (err < 0)
@@ -648,12 +664,110 @@ static ssize_t data16_store(struct device *dev,
 }
 static DEVICE_ATTR_RW(data16);
 
+static ssize_t raw16_show(struct device *dev, struct device_attribute *attr,
+				char *buf)
+{
+	struct retrode3_slot *slot = dev_get_drvdata(dev);
+	int word;
+
+	if (!is_selected(slot))
+		return sprintf(buf, "deselected\n");
+
+	word = get_word(slot->bus);
+
+	if (word < 0)
+		return word;
+
+	return sprintf(buf, "%04x\n", word);
+}
+
+static ssize_t raw16_store(struct device *dev,
+			   struct device_attribute *attr,
+			   const char *buf, size_t count)
+{
+	struct retrode3_slot *slot = dev_get_drvdata(dev);
+	unsigned int value;
+	int err;
+
+	if (!is_selected(slot))
+		return -EACCESS;
+
+	err = kstrtouint(buf, 16, &value);
+	if (err < 0)
+		return err;
+
+	if (value > 0x0ffff)
+		return -EINVAL;
+
+	/* leave bus active */
+	set_word(slot->bus, value);
+
+	return count;
+}
+static DEVICE_ATTR_RW(raw16);
+
+static ssize_t control_show(struct device *dev, struct device_attribute *attr,
+				char *buf)
+{
+	struct retrode3_slot *slot = dev_get_drvdata(dev);
+
+	buf[0] = 0;
+
+	sprintf(buf+strlen(buf), "cd=%d\n", gpiod_get_value_cansleep(slot->cd));
+	sprintf(buf+strlen(buf), "ce=%d\n", gpiod_get_value_cansleep(slot->ce));
+	sprintf(buf+strlen(buf), "phi2=%d\n", gpiod_get_value_cansleep(slot->bus->phi2));
+	sprintf(buf+strlen(buf), "rd=%d\n", gpiod_get_value_cansleep(slot->bus->oe));
+	sprintf(buf+strlen(buf), "reset=%d\n", gpiod_get_value_cansleep(slot->bus->reset));
+	sprintf(buf+strlen(buf), "we0=%d\n", gpiod_get_value_cansleep(slot->bus->we->desc[0]));
+	sprintf(buf+strlen(buf), "we8=%d\n", gpiod_get_value_cansleep(slot->bus->we->desc[1]));
+	sprintf(buf+strlen(buf), "time=%d\n", gpiod_get_value_cansleep(slot->bus->time));
+
+	return strlen(buf);
+}
+
+static ssize_t control_store(struct device *dev,
+			   struct device_attribute *attr,
+			   const char *buf, size_t count)
+{
+	struct retrode3_slot *slot = dev_get_drvdata(dev);
+	unsigned int value;
+	int err;
+
+	if (!is_selected(slot))
+		return -EACCESS;
+
+#define CONTROL(NAME, GPIO) if (strncmp(buf, #NAME "=", strlen(#NAME "=")) == 0) { \
+		err = kstrtouint(buf+strlen(#NAME "="), 16, &value); \
+		if (err < 0) \
+			return err; \
+		if (value > 1) \
+			return -EINVAL; \
+		gpiod_set_value_cansleep(GPIO, value); \
+		return count; \
+	}
+
+	CONTROL(phi2, slot->bus->phi2);
+	CONTROL(rd, slot->bus->oe);
+	CONTROL(reset, slot->bus->reset);
+	CONTROL(we0, slot->bus->we->desc[0]);
+	CONTROL(we8, slot->bus->we->desc[1]);
+	CONTROL(time, slot->bus->time);
+
+//printk("%s: %s", __func__, buf);
+//#define TEST(NAME) printk("%s: %s len=%d arg=%s cmp=%d", __func__, #NAME "=", strlen(#NAME "="), buf+strlen(#NAME "="), strncmp(buf, #NAME "=", strlen(#NAME "=")));
+//TEST(test);
+	return -EINVAL;
+}
+static DEVICE_ATTR_RW(control);
+
 static struct attribute *retrode3_attrs[] = {
 	&dev_attr_sense.attr,
 	&dev_attr_vcc.attr,
 	&dev_attr_addr.attr,
 	&dev_attr_data8.attr,
 	&dev_attr_data16.attr,
+	&dev_attr_raw16.attr,
+	&dev_attr_control.attr,
 	NULL,
 };
 ATTRIBUTE_GROUPS(retrode3);
