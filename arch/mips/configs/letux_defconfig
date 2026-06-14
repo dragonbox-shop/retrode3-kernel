@@ -6164,7 +6164,7 @@ CONFIG_TRACING_SUPPORT=y
 # mips Debugging
 #
 CONFIG_CMDLINE_BOOL=y
-CONFIG_CMDLINE="earlycon clk_ignore_unused ignore_loglevel rootwait"
+CONFIG_CMDLINE="earlycon clk_ignore_unused ignore_loglevel rootwait delayacct"
 # CONFIG_CMDLINE_OVERRIDE is not set
 # CONFIG_SPINLOCK_TEST is not set
 # CONFIG_SCACHE_DEBUGFS is not set
