@@ -121,6 +121,11 @@ static inline int _set_address(int mode, struct retrode3_slot *slot, uint32_t ad
 
 #define set_address(addr) if ((err = _set_address(mode, slot, (addr))) < 0) goto failed
 
+/*
+ * This function reads the slot. The ppos points directly to the
+ * memory location. But also includes a special access mode in the upper bits.
+ */
+
 /* this section needs cleanup!
  * it is a partial and modified and adapted copy of:
  *    https://github.com/sanni/cartreader/blob/0b8ac2ec14675ae55952ddf0b4590ba8d2899664/Cart_Reader/NES.ino#L1012
@@ -212,9 +217,16 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: read mode=%02x %08x\n", __func_
 						TIME_HIGH;
 						break;
 					// other modes
-					case MD_FRAM:	// special SONIC3 FRAM mode
+					case MD_ENSRAM:
+						byte = slot->fram_mode;
+						break;
+					default:
+						if (slot->fram_mode) {
+if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: read FRAM MODE %08x %02x\n", __func__, addr, byte);
+#if 0
+						// special SONIC3 FRAM mode
 						// IMPORTANT: if A10 = 0 and A21 = 1, writing the mapper in MD_TIME mode may already enable the CE and lead to data loss!
-						// so make sure that you write in MD_TIME mode with either A10 = 1 or A21 = 0 (0x03a13001 is safe)
+						// Disable global IRQ! Should never run more than 10µs!
 						// IMPORTANT: VCC should be above 3.5V - even for read
 						TIME_HIGH;
 						PRG_READ;	// make sure WE is High
@@ -229,11 +241,13 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: read mode=%02x %08x\n", __func_
 						byte = err = read_byte(slot->bus);	// read half based on a0
 						err = _set_address(mode, slot, addr | (1<<10));	// deactivate CE
 						CHR_READ_HI;	// OE no longer needed
-						break;
-					default:
+#endif
+						}
+
 						err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 						if(err < 0)
 							goto failed;
+						// MD_P10 und MD_P1 implementieren
 						byte = err = read_byte(slot->bus);	// read half based on a0
 				}
 			}
@@ -400,6 +414,31 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 
 		switch (mode) {
 			case MODE_SIMPLE_BUS:
+				if (slot->fram_mode) {
+				dev_info(&slot->dev, "%s: write FRAM %08x %02x\n", __func__, addr, byte);
+#if 0
+				// IMPORTANT: if A10 = 0 and A21 = 1, writing the mapper in MD_TIME mode may already enable the CE and lead to data loss!
+				// so make sure that you write in MD_TIME mode with either A10 = 1 or A21 = 0 (0x03a13001 is safe)
+				// IMPORTANT: VCC should be above 3.5V - even for read
+				// CHECKME: this whole sequence should not run more than 10 us!
+				TIME_HIGH;
+				CHR_READ_HI;	// disable OE - we use "CE controlled write"
+				PRG_READ;	// make sure WE is High
+				err = _set_address(mode, slot, addr | (1<<10));	// make sure A10 = 1 before we try anything
+				if(err < 0)
+					goto failed;
+				PRG_WRITE;	// activate WE
+				// Disable global IRQ! Should never run more than 10µs!
+				err = _set_address(mode, slot, addr);	// this leads to falling edge of CE (if cart is selected and mapper enabled)
+				if(err < 0)
+					goto failed;
+				set_half(slot->bus, byte, slot->bus->current_addr & 1);	// a0 should be 1 for D0..D7 but no WE0
+				err = _set_address(mode, slot, addr | (1<<10));	// deactivate CE
+				PRG_READ;	// deactivate CE
+				break;
+#endif
+				break;
+				}
 				dev_info(&slot->dev, "%s: write BUS %08x %02x\n", __func__, addr, byte);
 				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 				if(err < 0)
@@ -408,7 +447,7 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 // CHECKME: do we have to play the WE0/WE8 differently?
 				break;
 			case MD_TIME:	// write with active TIME impulse
-				dev_info(&slot->dev, "%s: write MD_TIME+WE %08x %02x\n", __func__, addr, byte);
+				dev_info(&slot->dev, "%s: write MD_TIME %08x %02x\n", __func__, addr, byte);
 				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 				if(err < 0)
 					goto failed;
@@ -417,41 +456,24 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 				TIME_HIGH;
 				break;
 				;;
-			case MD_ENSRAM:	// write with active TIME impulse but no WE
-				dev_info(&slot->dev, "%s: write MD_TIME %08x %02x\n", __func__, addr, byte);
+			case MD_ENSRAM:	// write to D0..D7 with active TIME impulse but no WE0
+				dev_info(&slot->dev, "%s: write MD_ENSRAM %08x %02x\n", __func__, addr, byte);
 #if 0	// ignore address
 				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 				if(err < 0)
 					goto failed;
 #endif
-				set_half(slot->bus, byte, slot->bus->current_addr & 1);	// a0 should be 1 for D0..D7 but no WE0
+				err = _set_address(mode, slot, 0);	// make sure we do not have A10 = 0 and A21 = 1 as this might activate CE
+				if(err < 0)
+					goto failed;
+				set_half(slot->bus, byte, 1);	// set to D0..D7
 				TIME_LOW;
-				_delay_us(1);
+				_delay_us(1);	// there is no WE0!
 				TIME_HIGH;
 				end_drive_word(slot->bus);
+				slot->fram_mode = byte != 0;	// remember
 				break;
 				;;
-			case MD_FRAM:	// special SONIC3 FRAM mode
-				dev_info(&slot->dev, "%s: write FRAM %08x %02x\n", __func__, addr, byte);
-				// IMPORTANT: if A10 = 0 and A21 = 1, writing the mapper in MD_TIME mode may already enable the CE and lead to data loss!
-				// so make sure that you write in MD_TIME mode with either A10 = 1 or A21 = 0 (0x03a13001 is safe)
-				// IMPORTANT: VCC should be above 3.5V - even for read
-				// CHECKME: this whole sequence should not run more than 10 us!
-				TIME_HIGH;
-				CHR_READ_HI;	// disable OE - we use "CE controlled write"
-				PRG_READ;	// make sure WE is High
-				err = _set_address(mode, slot, addr | (1<<10));	// make sure A9 = 1 before we try anything
-				if(err < 0)
-					goto failed;
-				PRG_WRITE;	// activate WE
-				// CHECKME: this whole sequence should not run more than 10 us!
-				err = _set_address(mode, slot, addr);	// this leads to falling edge of CE (if cart is selected and mapper enabled)
-				if(err < 0)
-					goto failed;
-				set_half(slot->bus, byte, slot->bus->current_addr & 1);	// a0 should be 1 for D0..D7 but no WE0
-				err = _set_address(mode, slot, addr | (1<<10));	// deactivate CE
-				PRG_READ;	// deactivate CE
-				break;
 			case NES_PRG:
 			case NES_MMC5_SRAM:
 				dev_info(&slot->dev, "%s: write NES CPU/PRG/SRAM %08x %02x\n", __func__, addr, byte);
@@ -796,6 +818,8 @@ static int retrode3_open(struct inode *inode, struct file *file)
 		return ret;
 
 	file->private_data = slot;
+
+	slot->fram_mode = false;
 
 	return ret;
 }

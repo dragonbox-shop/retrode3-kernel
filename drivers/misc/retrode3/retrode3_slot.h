@@ -86,6 +86,8 @@ struct retrode3_slot {
 	int id;			// slot id
 // nur für Spezialisierung auf controller-slot
 	struct retrode3_controller controllers[2];
+// nur für MD und FRAM
+	bool fram_mode;		// FRAM mode (SONIC3) has been activated through MD_MODE_ENSRAM
 };
 
 /* retrode3 bus client match table */
