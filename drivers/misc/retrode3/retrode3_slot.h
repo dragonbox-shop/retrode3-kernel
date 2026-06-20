@@ -33,6 +33,33 @@
 #include <linux/uaccess.h>
 #include <linux/uio.h>
 
+/* special mode constants - should be exported as ABI to user-space */
+
+#define MODE_SIMPLE_BUS	0	// default read/write with just CE, RD/WR0/WR8
+#define MD_ROM		MODE_SIMPLE_BUS
+#define MD_P10		1	// 10 toggle pulses on CLK
+#define MD_P1		2	// 1 toggle pulses on CLK
+#define MD_TIME		3	// read/write with TIME impulse
+#define MD_FLASH	unused 0x04 unused
+#define MD_ENSRAM	5	// write D0 with TIME impulse (address ignored) without WE - switches to FRAM mode
+#define MD_EEPMODE	6
+
+#define SNES_REGULAR	MODE_SIMPLE_BUS
+#define SNES_HIROM	9
+
+// for NES address mapping: https://www.nesdev.org/wiki/CPU_memory_map
+
+// can we simplify this? E.g. make the distinction between ROM (PRG) and RAM depend on address?
+// so that /dev/slot mimicks the CPU_memory_map?
+
+#define NES_PRG		10	// CPU d0..d7	ROM $8000-$ffff
+#define NES_CHR		11	// PPU d8..d15	ROM
+#define NES_CHR_M2	12	// PPU d8..d15	?
+#define NES_MMC5_SRAM	13	// CPU d0..d7	special RAM? $0000-$07ff
+#define NES_REG		14	// PPU d8..d15	PPU registers? $2000-$2007
+#define NES_RAM		15	// PPU d8..d15	internal RAM? $0000-$07ff
+#define NES_WRAM	16	// PPU d8..d15?	Cartridge RAM  $6000-$7fff
+
 /* one slot */
 
 struct retrode3_controller {
