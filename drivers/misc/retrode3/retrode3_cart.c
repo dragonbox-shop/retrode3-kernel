@@ -163,7 +163,7 @@ static ssize_t retrode3_read(struct file *file, char __user *buf,
 			count = EOF - addr;	// limit to EOF
 	}
 
-if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: read mode=%02x %08x\n", __func__, mode, addr);
+if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: read mode=%02x %08x %08x\n", __func__, mode, addr, count);
 	while (count > 0) {
 #ifndef CONFIG_RETRODE3_BUFFER
 		unsigned long remaining;
@@ -249,6 +249,7 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: read FRAM MODE %08x %02x\n", __
 							goto failed;
 						// MD_P10 und MD_P1 implementieren
 						byte = err = read_byte(slot->bus);	// read half based on a0
+						dev_info(&slot->dev, "%s: read BUS %08x %02x\n", __func__, addr, byte);
 				}
 			}
 			else { // 8 bit bus SNES or NES
@@ -400,7 +401,7 @@ static ssize_t retrode3_write(struct file *file, const char __user *buf,
 			count = EOF - addr;	// limit to EOF
 	}
 
-if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func__, mode, addr);
+if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x %08x\n", __func__, mode, addr, count);
 	while (count > 0) {
 		// int allowed;
 		uint8_t byte;
@@ -415,10 +416,8 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 		switch (mode) {
 			case MODE_SIMPLE_BUS:
 				if (slot->fram_mode) {
-				dev_info(&slot->dev, "%s: write FRAM %08x %02x\n", __func__, addr, byte);
 #if 0
-				// IMPORTANT: if A10 = 0 and A21 = 1, writing the mapper in MD_TIME mode may already enable the CE and lead to data loss!
-				// so make sure that you write in MD_TIME mode with either A10 = 1 or A21 = 0 (0x03a13001 is safe)
+					dev_info(&slot->dev, "%s: write FRAM %08x %02x\n", __func__, addr, byte);
 				// IMPORTANT: VCC should be above 3.5V - even for read
 				// CHECKME: this whole sequence should not run more than 10 us!
 				TIME_HIGH;
@@ -458,12 +457,14 @@ if ((addr &0xff) == 0) dev_info(&slot->dev, "%s: write mode=%02x %08x\n", __func
 				;;
 			case MD_ENSRAM:	// write to D0..D7 with active TIME impulse but no WE0
 				dev_info(&slot->dev, "%s: write MD_ENSRAM %08x %02x\n", __func__, addr, byte);
+				// IMPORTANT: if A10 = 0 and A21 = 1, writing the mapper in MD_TIME mode may already enable the CE and lead to data loss!
+				// so make sure that if you write in MD_TIME mode with either A10 = 1 or A21 = 0 (0x03a13001 is NOT AT ALL safe)
 #if 0	// ignore address
 				err = _set_address(mode, slot, addr);	// 24 bit address and A0 determines lower/upper byte
 				if(err < 0)
 					goto failed;
 #endif
-				err = _set_address(mode, slot, 0);	// make sure we do not have A10 = 0 and A21 = 1 as this might activate CE
+				err = _set_address(mode, slot, 1<<10);	// make sure we do NOT have A10 = 0 or A21 = 1 as this might activate CE too early
 				if(err < 0)
 					goto failed;
 				set_half(slot->bus, byte, 1);	// set to D0..D7
