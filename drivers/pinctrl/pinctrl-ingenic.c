@@ -4648,6 +4648,8 @@ static int __init ingenic_gpio_probe(struct ingenic_pinctrl *jzpc,
 	unsigned int bank;
 	int err;
 
+printk("%s %d\n", __func__, __LINE__);
+
 	err = fwnode_property_read_u32(fwnode, "reg", &bank);
 	if (err) {
 		dev_err(dev, "Cannot read \"reg\" property: %i\n", err);
@@ -4687,6 +4689,7 @@ static int __init ingenic_gpio_probe(struct ingenic_pinctrl *jzpc,
 	jzgc->gc.free = gpiochip_generic_free;
 
 	err = fwnode_irq_get(fwnode, 0);
+if(err < 0) printk("%s %d: err=%d\n", __func__, __LINE__, err);
 	if (err < 0)
 		return err;
 	if (!err)
@@ -4707,11 +4710,17 @@ static int __init ingenic_gpio_probe(struct ingenic_pinctrl *jzpc,
 	girq->handler = handle_level_irq;
 
 	err = devm_gpiochip_add_data(dev, &jzgc->gc, jzgc);
+if(err < 0) printk("%s %d: err=%d\n", __func__, __LINE__, err);
+
 	if (err)
 		return err;
+printk("%s %d: done\n", __func__, __LINE__);
 
 	return 0;
 }
+
+#undef dev_err
+#define dev_err dev_info
 
 static int __init ingenic_pinctrl_probe(struct platform_device *pdev)
 {
@@ -4725,6 +4734,8 @@ static int __init ingenic_pinctrl_probe(struct platform_device *pdev)
 	unsigned int i;
 	int err;
 
+printk("%s %d\n", __func__, __LINE__);
+
 	chip_info = device_get_match_data(dev);
 	if (!chip_info) {
 		dev_err(dev, "Unsupported SoC\n");
@@ -4736,6 +4747,7 @@ static int __init ingenic_pinctrl_probe(struct platform_device *pdev)
 		return -ENOMEM;
 
 	base = devm_platform_ioremap_resource(pdev, 0);
+if(IS_ERR(base)) printk("%s %d: err=%d\n", __func__, __LINE__, (int) PTR_ERR(base));
 	if (IS_ERR(base))
 		return PTR_ERR(base);
 
@@ -4813,11 +4825,13 @@ static int __init ingenic_pinctrl_probe(struct platform_device *pdev)
 		if (of_match_node(ingenic_gpio_of_matches, to_of_node(fwnode))) {
 			err = ingenic_gpio_probe(jzpc, fwnode);
 			if (err) {
+printk("%s %d: err=%d\n", __func__, __LINE__, err);
 				fwnode_handle_put(fwnode);
 				return err;
 			}
 		}
 	}
+printk("%s %d: done\n", __func__, __LINE__);
 
 	return 0;
 }
