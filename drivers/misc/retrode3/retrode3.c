@@ -277,17 +277,18 @@ static void select_slot(struct retrode3_bus *bus, struct retrode3_slot *slot)
 { /* control cart select */
 	int i;
 
-// printk("%s:\n", __func__);
+// printk("%s %d: %px\n", __func__, __LINE__, slot);
 
 	if (slot) {
 		if (is_selected(slot))
 			return;	// already selected (and locked)
-		mutex_lock(&bus->select_lock);	// lock until slot == 0
+		mutex_lock(&bus->select_lock);	// lock until slot == NULL
 	}
 
+	/* make sure that only one or no slot is selected at any time */
 	for(i=0; i<ARRAY_SIZE(bus->slots); i++) {
 		if (!bus->slots[i])
-			continue;	// avoid to match slot == NULL
+			continue;	// avoid to match a slot without ce
 		gpiod_set_value(bus->slots[i]->ce, (bus->slots[i] == slot) ? 1:0);
 	}
 
