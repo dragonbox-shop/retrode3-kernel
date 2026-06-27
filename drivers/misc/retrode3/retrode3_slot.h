@@ -35,8 +35,9 @@
 
 /* special mode constants - should be exported as ABI to user-space */
 
-#define MODE_SIMPLE_BUS	0	// default read/write with just CE, RD/WR0/WR8
-#define MD_ROM		MODE_SIMPLE_BUS
+#define MODE_SIMPLE_BUS	MD_ROM	// default read/write with just CE, RD/WR0/WR8
+
+#define MD_ROM		0
 #define MD_P10		1	// 10 toggle pulses on CLK
 #define MD_P1		2	// 1 toggle pulses on CLK
 #define MD_TIME		3	// read/write with TIME impulse
