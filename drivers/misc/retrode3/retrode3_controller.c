@@ -30,8 +30,18 @@ static void retrode3_polling_work(struct work_struct *work)
 
 	int cycle;
 	int w;
-	u64 word[4] = { 0, 0, 0, 0 };	// left and right controllers
+	u64 word[ARRAY_SIZE(slot->controllers)] = { 0, 0, 0, 0 };	// left and right controllers
 
+#if 0
+	ask some variable in /sys/.../nopoll
+	if (no_poll)
+		{
+		schedule_delayed_work(&slot->work, POLL_RATE);	// start next check
+		return;
+		}
+	alternative: just write to some /sys/.../nopoll
+	and always cancel the worker but (re)start only if polling is intended
+#endif
 	select_slot(slot->bus, slot);
 
 	/* SEGA controller
@@ -98,7 +108,7 @@ static void retrode3_polling_work(struct work_struct *work)
 #define IS_SEGA_CONTROLLER(i) (i < 2)
 #define IS_SNES_CONTROLLER(i) (!IS_SEGA_CONTROLLER(i))
 
-	for (i=0; i < 4; i++) {
+	for (i=0; i < ARRAY_SIZE(slot->controllers); i++) {
 		struct retrode3_controller *c = &slot->controllers[i];
 		u64 state = word[i];
 		u64 changes;
@@ -190,7 +200,7 @@ int retrode3_probe_controller(struct retrode3_slot *slot, struct device_node*chi
 	gpiod_set_value(slot->ce, 0);	// turn inactive
 
 	id = 0;
-	while (id < 4 && (controller = of_get_next_child(child, controller))) {
+	while (id < ARRAY_SIZE(slot->controllers) && (controller = of_get_next_child(child, controller))) {
 		struct input_dev *input_dev;
 
 		dev_info(&slot->dev, "add game controller %d\n", id);

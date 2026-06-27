@@ -85,7 +85,7 @@ struct retrode3_slot {
 	struct cdev cdev;	// the /dev/slot character device
 	int id;			// slot id
 // nur für Spezialisierung auf controller-slot
-	struct retrode3_controller controllers[2];
+	struct retrode3_controller controllers[4];
 // nur für MD und FRAM
 	bool fram_mode;		// FRAM mode (SONIC3) has been activated through MD_MODE_ENSRAM
 };
